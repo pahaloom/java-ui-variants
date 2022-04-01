@@ -1,4 +1,8 @@
 import javax.swing.*;
+import javax.swing.plaf.metal.DefaultMetalTheme;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.metal.MetalTheme;
+import javax.swing.plaf.metal.OceanTheme;
 import java.awt.*;
 
 public class SWINGCalculator {
@@ -49,8 +53,61 @@ public class SWINGCalculator {
         pane.add(calcButton);
         pane.add(ansField);
 
+        pane.add(createLFArea(frame));
+
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private static JPanel createLFArea(JFrame rootFrame) {
+        JPanel lfPanel = new JPanel();
+        lfPanel.add(new Label("Look & Feel"));
+        JComboBox<LFMgr> lfMgrJComboBox = new JComboBox<>();
+        JComboBox<ThemeMgr> themeMgrJComboBox = new JComboBox<>();
+
+        for (LFMgr lfMgr : getInstalledLFItems()) {
+            lfMgrJComboBox.addItem(lfMgr);
+        }
+        lfMgrJComboBox.addItemListener(il -> {
+            reApplySelectedLF((LFMgr) il.getItem(), rootFrame, themeMgrJComboBox);
+        });
+
+        for (ThemeMgr themeMgr : getMetalThemes()) {
+            themeMgrJComboBox.addItem(themeMgr);
+        }
+        themeMgrJComboBox.setSelectedIndex(-1);
+        themeMgrJComboBox.addItemListener(il -> {
+            reApplySelectedLF(lfMgrJComboBox, rootFrame, themeMgrJComboBox);
+        });
+
+        lfPanel.add(lfMgrJComboBox);
+        lfPanel.add(themeMgrJComboBox);
+        return lfPanel;
+    }
+
+    private static void reApplySelectedLF(LFMgr lfMgr, JFrame rootFrame, JComboBox<ThemeMgr> themeMgrJComboBox) {
+        lfMgr.apply(rootFrame, themeMgrJComboBox);
+    }
+
+    private static void reApplySelectedLF(JComboBox<LFMgr> lfMgrJComboBox, JFrame rootFrame, JComboBox<ThemeMgr> themeMgrJComboBox) {
+        reApplySelectedLF((LFMgr) lfMgrJComboBox.getSelectedItem(), rootFrame, themeMgrJComboBox);
+    }
+
+    private static ThemeMgr[] getMetalThemes() {
+        return new ThemeMgr[] {
+                new ThemeMgr(new DefaultMetalTheme()),
+                new ThemeMgr(new OceanTheme())
+        };
+    }
+
+    private static LFMgr[] getInstalledLFItems() {
+        UIManager.LookAndFeelInfo[] installedLookAndFeels = UIManager.getInstalledLookAndFeels();
+        LFMgr[] retVal = new LFMgr[installedLookAndFeels.length];
+        for (int i = 0 ; i < installedLookAndFeels.length ; i++) {
+            UIManager.LookAndFeelInfo lookAndFeelInfo = installedLookAndFeels[i];
+            retVal[i] = new LFMgr(lookAndFeelInfo.getName(), lookAndFeelInfo.getClassName());
+        }
+        return retVal;
     }
 
     static abstract class Operation {
@@ -96,6 +153,54 @@ public class SWINGCalculator {
         }
         int operate(int a, int b) {
             return a / b;
+        }
+    }
+
+    static class LFMgr {
+        private final String title;
+        private final String className;
+        LFMgr(String title, String className) {
+            this.title = title;
+            this.className = className;
+        }
+        void apply(JFrame frame, JComboBox<ThemeMgr> themeMgrJComboBox) {
+            try {
+                if (title.equals("Metal")) {
+                    themeMgrJComboBox.setEnabled(true);
+                    MetalLookAndFeel.setCurrentTheme((
+                            (ThemeMgr) themeMgrJComboBox.getSelectedItem()).theme);
+                } else {
+                    themeMgrJComboBox.setEnabled(false);
+                }
+                UIManager.setLookAndFeel(className);
+                SwingUtilities.updateComponentTreeUI(frame);
+                frame.pack();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (UnsupportedLookAndFeelException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public String toString() {
+            return title;
+        }
+    }
+
+    static class ThemeMgr {
+        MetalTheme theme;
+        public ThemeMgr(MetalTheme metalTheme) {
+            this.theme = metalTheme;
+        }
+
+        @Override
+        public String toString() {
+            return theme.getName();
         }
     }
 }
