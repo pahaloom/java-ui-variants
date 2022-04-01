@@ -1,5 +1,6 @@
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.bundle.LanternaThemes;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -54,9 +55,20 @@ public class LanternaCalculator {
         panel.addComponent(new EmptySpace(new TerminalSize(0, 0)));
         panel.addComponent(lblOutput);
 
+        var themes = LanternaThemes.getRegisteredThemes();
+        final ComboBox<String> themeSwitcher = new ComboBox<String>();
+        for (String theme : themes) {
+            themeSwitcher.addItem(theme);
+        }
+        panel.addComponent(themeSwitcher);
+
         // Create window to hold the panel
         BasicWindow window = new BasicWindow();
         window.setComponent(panel);
+
+        themeSwitcher.addListener((i, i1, b) -> {
+            window.setTheme(LanternaThemes.getRegisteredTheme(themeSwitcher.getSelectedItem()));
+        });
 
         // Create gui and start gui
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen, new DefaultWindowManager(), new EmptySpace(TextColor.ANSI.BLUE));
